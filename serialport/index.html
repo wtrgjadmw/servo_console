@@ -60,22 +60,28 @@
             background: #efefef;
         }
     </style>
+    <link rel="stylesheet" href="node_modules/xterm/css/xterm.css" />
+    <script src="node_modules/xterm/lib/xterm.js"></script>
 </head>
 
 
 <body>
     <ul id="messages"></ul>
     <button id="select">select serial</button>
+    <div id="terminal"></div>
     <form id="form" action="">
         <input id="input" autocomplete="off" /><button>Send</button>
     </form>
 </body>
 <script>
     const selectButton = document.getElementById('select');
+    const term = new Terminal();
+    term.open(document.getElementById('terminal'));
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     let port;
     selectButton.addEventListener('click', async () => {
+        console.log(port);
         port = await navigator.serial
             .requestPort()
             .catch((e) => { console.error(e); });
@@ -95,6 +101,7 @@
             }
 
             const chunk = decoder.decode(value, { stream: true });
+            term.write(chunk);
             chunk_split_list = chunk.split("\n");
 
             for (let i = 0; i < chunk_split_list.length - 1; i++) {
@@ -103,10 +110,12 @@
                 messages.appendChild(listItem);
             }
             listItem.textContent += chunk_split_list[chunk_split_list.length - 1];
+            reader.releaseLock();
 
             return reader.read().then(processText);
         });
     });
+
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
